@@ -5,7 +5,8 @@
 
 A nightstand clock as a programming project.
 
-![e-ink display driven by this code](https://photos.app.goo.gl/F47QVzqR2oV6EbBj6)
+![image of running device](img/IMG_20181117_190132.jpg)
+[Link to picture of running device](https://photos.app.goo.gl/F47QVzqR2oV6EbBj6)
 
 
 ### Details
