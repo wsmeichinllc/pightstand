@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#import os
+import subprocess
+import datetime
+import radiotherm
+import pprint
+import json
+from papirus import Papirus
+from PIL import Image, ImageDraw, ImageFont
+txt = Image.new("1", (264, 176), 1)
+fsa = ImageFont.truetype(font="/usr/share/fonts/truetype/freefont/FreeSans.ttf", size=20)
+fsb = ImageFont.truetype(font="/usr/share/fonts/truetype/freefont/FreeSans.ttf", size=30, encoding="utf-8")
+fsm = ImageFont.truetype(font="/usr/share/fonts/truetype/freefont/FreeMono.ttf", size=30, encoding="utf-8")
+fsc = ImageFont.truetype(font="/usr/share/fonts/truetype/freefont/FreeSans.ttf", size=50)
+#fcal = ImageFont.truetype(font="/usr/share/fonts/truetype/freefont/FreeMono.ttf", size=11)
+fcal = ImageFont.truetype(font="/usr/share/fonts/truetype/droid/DroidSansMono.ttf", size=11)
+d = ImageDraw.Draw(txt)
+# d.text((0,150), "Hello", font=fsa)
+# d.text((50,150), "World", font=fsa)
+
+# generate time and date and add it to the image
+n=datetime.datetime.now()
+dtx=0
+dty=0
+dth=30
+dtd=n.strftime("%a, %d %b %Y")
+dtt=n.strftime("%I:%M %p")
+d.text((dtx,dty), dtd, font=fsb)
+d.text((dtx,dty+dth), dtt, font=fsc)
+
+# query the thermostat and add the current temperature to the image
+tdfile="/dev/shm/internal-temperature.json"
+try:
+    ts=radiotherm.get_thermostat()
+    tsr=ts.temp
+    tsdr="{0}".format(str(round(tsr["raw"],1)))
+    tsds={"temp": tsdr}
+    pprint.pprint(tsds)
+    with open(tdfile,"w") as tdw:
+        json.dump(tsds,tdw)
+except (IOError, KeyError):
+    print("EXCEPTION: thermostat")
+    try:
+        with open(tdfile,"r") as tdr:
+            tsds=json.load(tdr)
+            pprint(tsds)
+    except:
+        print("EXCEPTION: tdr")
+try:
+    tdp=u'\N{HOUSE}'
+    tds=u'\N{DEGREE FAHRENHEIT}'
+    tst=u"{0}{1}".format(tsds["temp"],tds)
+    tsx=0
+    tsxo=18
+    tsy=90
+    d.text((tsx,tsy), tdp, font=fsm)
+    d.text((tsx+tsxo,tsy), tst, font=fsb)
+except NameError:
+    print("EXCEPTION: tsds")
+
+# query the intertubes and add the current outdoor temperature to the image
+otfile="/dev/shm/external-temperature.json"
+n=datetime.datetime.now()
+# limit API queries
+if n.minute % 20 == 0:
+    import requests
+    otendpoint='http://api.openweathermap.org/data/2.5/weather'
+    otpayload={"lat": "41.83", "lon": "-87.80", "appid": "123456789abcdef0123456789abcdef0", "units": "imperial"}
+    otc=requests.get(otendpoint, params=otpayload)
+    otj=otc.json()
+    oto=(otj.get("main").get("temp"))
+    otds={"temp": oto}
+    with open(otfile,"w") as otw:
+        json.dump(otds,otw)
+else:
+    try:
+        with open(otfile, "r") as otr:
+            otds=json.load(otr)
+    except EnvironmentError:
+        pass
+# in either case, otds now contains the temp data
+try:
+    otp=u'\N{SUN}'
+    ots=u'\N{DEGREE FAHRENHEIT}'
+    ott=u"{0}{1}".format(round(float(otds["temp"]),1),ots)
+    otx=0
+    otxo=18
+    oty=120
+    d.text((otx,oty), otp, font=fsm)
+    d.text((otx+otxo,oty), ott, font=fsb)
+except NameError:
+    pass
+
+# generate a calendar for this month and add it to the image
+m=subprocess.check_output(["cal", "-h"])
+# print(m)
+fcx=125
+fcy=90
+fch=11
+for lines in m.splitlines():
+    print("[{}]".format(lines))
+    d.text((fcx,fcy), lines, font=fcal)
+    fcy=fcy+fch
+
+# and output the image to a file on ramdisk
+txt.save("/dev/shm/papirus.bmp")
+

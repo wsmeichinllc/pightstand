@@ -1,0 +1,89 @@
+#!/usr/bin/python
+# monitor switches on papirus e-ink display
+# and do things about them
+# started 15 dec 2018 wse
+#
+import time
+import pprint
+import os
+import sys
+
+# subroutine to test pid
+def check_pid(pid):        
+    """ Check For the existence of a unix pid. """
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
+
+# establish process id
+PIDfile="/dev/shm/papiswitch.pid"
+mypid=os.getpid()
+storedpid=0
+if not os.path.isfile(PIDfile):
+    """ not running, establish pid """
+    print("established pid")
+    with open(PIDfile, "w") as pfw:
+        pfw.write(str(mypid))
+else:
+    """ maybe running, check pid """
+    print("pidfile exists")
+    with open(PIDfile, "r") as pfr:
+        for line in pfr:
+            storedpid=int(line.strip())
+    if storedpid == 0:
+        print("failed to read pid from file, taking over")
+    elif check_pid(storedpid) is True:
+        print("pid exists and is active, exiting")
+        sys.exit(2)
+    else:
+        print("pid is inactive, taking over")
+    with open(PIDfile, "w") as pfw:
+        pfw.write(str(mypid))
+
+# define buttons
+buttons=[36,37,38,40]
+button_state={}
+dtl=0
+
+# prep button pins
+import RPi.GPIO as GPIO
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(buttons, GPIO.IN)
+
+# find wemo devices
+import pywemo
+d=pywemo.discover_devices()
+print(d)
+
+# what to do when button is pushed
+
+def flipswitch(button):
+    global dtl
+    dtn=time.time()
+    dte=dtn-dtl
+    if dte > 1:
+        print("press detected from {}".format(button))
+        d[0].toggle()
+    else:
+        print("bounce filtered from {}".format(button))
+    dtl=dtn
+
+# wait for switch to flip
+
+for b in buttons:
+    GPIO.add_event_detect(b, GPIO.FALLING, callback=flipswitch)
+    print("event detect enabled on {}".format(b))
+    #GPIO.wait_for_edge(23, GPIO.FALLING) 
+
+try:
+    while True:
+        for u in buttons:
+            button_state[u]=GPIO.input(u)
+        pprint.pprint(button_state)
+        time.sleep(60)
+except KeyboardInterrupt:
+    print("exiting on keyboard interrupt")
+    GPIO.cleanup()

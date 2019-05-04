@@ -1,0 +1,29 @@
+#!/usr/bin/python
+
+from papirus import Papirus
+from PIL import Image
+import random
+import datetime
+import os
+
+papirus = Papirus()
+
+image = Image.open('/home/pi/logo.bmp')
+fsuts = "/dev/shm/full-screen-update.timestamp"
+
+def touch(fname, times=None):
+    with open(fname, 'a'):
+        os.utime(fname, times)
+
+papirus.display(image)
+n=datetime.datetime.now()
+
+if not os.path.isfile(fsuts):
+    touch(fsuts)
+    papirus.update()
+    os.exit(0)
+if n.minute == 0:
+    touch(fsuts)
+    papirus.update()
+else:
+    papirus.partial_update()
