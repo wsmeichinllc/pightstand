@@ -47,9 +47,7 @@ A nightstand clock as a programming project.
 
 #### papirus-temp
 
-This is a shell script that reads the on-board temperature sensor.  
-This provides the board temperature, which is regularly higher than the room temperature, and not much use to this application.  
-This is also [available in the vendor repo](https://github.com/PiSupply/PaPiRus/blob/master/bin/papirus-temp.sh), although it's been replaced by a python script.
+This is a shell script that reads the on-board temperature sensor.  It provides the board temperature, which is regularly higher than the room temperature, and not much use to this application.  It is now [available in the vendor repo](https://github.com/PiSupply/PaPiRus/blob/master/bin/papirus-temp.sh); someone has also contributed a python version.
 
 #### papiswitch
 
@@ -61,11 +59,7 @@ This is a python program that monitors the buttons on the PaPiRus Screen HAT:
 +  first detected [WeMo plug](https://www.belkin.com/us/p/P-F7C063/) is toggled
 +  quits on error
 
-A cron job relaunches this every minute.  
-Sometimes it fails to toggle the light, and I haven't started to debug it.  
-Killing the process (also power-cycling the raspberry pi) generally clears this up.  
-It's been suggested that I squirt XML directly to its IP address and skip the library, but I'd rather understand what's going on.  
-This will need to support more WeMo devices in the near future.
+A cron job relaunches this every minute.  Sometimes it fails to toggle the light; I haven't started to debug it.  Killing the process (also power-cycling the raspberry pi) generally clears this up.  It's been suggested that I squirt XML directly to its IP address and skip the library, but I'd rather understand what's going on.  This will need to support more WeMo devices in the near future.
 
 #### papirus-image
 
@@ -81,8 +75,9 @@ This is the core, pulling together various data and formatting the display.  Thi
 
 +  polls my thermostat for current house temperature
 +  polls [openweathermap](https://openweathermap.org/api) every twenty minutes for outside temperature near me
-+  executes the GNU [cal](https://www.gnu.org/software/gcal/) utility to generate current month calendar
-+  creates bitmap image for loading to display
++  executes the GNU [cal](https://www.gnu.org/software/gcal/) utility to display the current month
++  uses Python Imaging Library for screen layout (fonts, sizes, positions)
++  creates bitmap image file for loading to display (by `papirus-image`, above)
 
 #### crontab
 
@@ -91,7 +86,6 @@ This is the core, pulling together various data and formatting the display.  Thi
 * * * * * [ -x bin/papigen ] && bin/papigen && bin/papirus-image >/dev/null 2>&1 
 * * * * * [ -x bin/papiswitch ] && bin/papiswitch > /dev/null 2>&1 &
 ```
-
 
 
 ### History
@@ -103,7 +97,6 @@ This is the core, pulling together various data and formatting the display.  Thi
 | 17 Nov 2018 | started nightstand clock idea instead of shoveling snow; initial commit |
 | 15 Dec 2018 | pressing button toggles wemo lightswitch |
 | 4 May 2019 | sanitized, commited to public repository |
-
 
 
 
