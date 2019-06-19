@@ -5,9 +5,11 @@
 #
 import time
 import pprint
+import logging
 import os
 import sys
 
+logging.basicConfig(level=logging.DEBUG)
 # subroutine to test pid
 def check_pid(pid):        
     """ Check For the existence of a unix pid. """
@@ -44,7 +46,18 @@ else:
         pfw.write(str(mypid))
 
 # define buttons
+
+"""
+>>> d[0]
+<WeMo Switch "Bill bed">
+>>> d[0].serialnumber
+'12345678901234'
+>>> d[1].serialnumber
+'12345678901235'
+"""
+
 buttons=[36,37,38,40]
+buttonMap={36: '', 37: '', 38: '12345678901235', 40: '12345678901234'}
 button_state={}
 dtl=0
 
@@ -56,19 +69,24 @@ GPIO.setup(buttons, GPIO.IN)
 # find wemo devices
 import pywemo
 d=pywemo.discover_devices()
-print(d)
+logging.debug("wemo devices: {0}".format(d))
+if len(d) < 1:
+    raise SystemExit
 
 # what to do when button is pushed
 
 def flipswitch(button):
+    logging.debug("button [{0}] pressed.".format(button))
     global dtl
     dtn=time.time()
     dte=dtn-dtl
     if dte > 1:
-        print("press detected from {}".format(button))
-        d[0].toggle()
+        logging.info("press detected from {0}, toggling {1}".format(button,buttonMap[button]))
+	for dbt in range(len(d)):
+            if d[dbt].serialnumber == buttonMap[button]:
+                d[dbt].toggle()
     else:
-        print("bounce filtered from {}".format(button))
+        logging.info("bounce filtered from {}".format(button))
     dtl=dtn
 
 # wait for switch to flip
